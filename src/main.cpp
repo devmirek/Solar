@@ -54,19 +54,24 @@ void setup(void) {
   digitalWrite( PIN_LED, LOW);
   pinMode(PIN_BUTTON, INPUT);
 
-  // Connect to WiFi network
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
   char hostSuffix[5];
   snprintf(hostSuffix, 5, "%02x%02x", mac[4], mac[5]);
 
   Serial.println("Version: " VERSION " " __DATE__ " " __TIME__);
-  Serial.println("Host: " "window-" + String(hostSuffix));
+  Serial.println("Host: " "solar-" + String(hostSuffix));
 
-  WiFi.hostname("window-" + String(hostSuffix));
+  //initialize sensors
+  actor.setup();
+  owSensors.setup();
+
+  //connect to WiFi network
+  WiFi.hostname("solar-" + String(hostSuffix));
   WiFi.mode(WIFI_STA);
   REGISTER_WIFI_AP;
-  // Wait for connection
+
+  //wait for connection
   while (wifiMulti.run() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -82,30 +87,15 @@ void setup(void) {
   setupInfluxDB();
   writeStatus( "boot");
 
-  //initialize sensors
-  owSensors.setup();
-
   //initialize web server
   setupWebServer();
 
-  actor.setup();
-
   delay(200);
-}
-
-bool logPin( uint8_t pin, bool &state, const char* name) {
-  if ( digitalRead(pin) != state) {
-    state = !state;
-    Serial.println( String(name) + (state ? " DOWN" : " UP"));
-    return state;
-  }
-  return false;
 }
 
 void loop(void) {
   esp_task_wdt_reset();
   loopWebServer();
-  actor.loop();
   digitalWrite( PIN_LED, wifiMulti.run() == WL_CONNECTED ? HIGH : LOW); //Set blue led according to WiFi status
   //check WiFi
   if (wifiMulti.run() != WL_CONNECTED)
@@ -114,19 +104,23 @@ void loop(void) {
   if ((millis() - timeSinceLastMinute) >= 1000*60) {  //call it once a minute
     timeSinceLastMinute = millis();
     timeMins++;
-    Serial.println("controlling window");
+    Serial.println("== Controlling solar");
 
     //------------ call once a minute  ------------
     //Read temperature from the DS1820 or other sensors
-    float t = owSensors.getTemp( OneWireSensors::tTempSensor::tGreenHouse);
-    Serial.println("Temp(Greenhouse) control: " + String(t) + "°C");
+    float t = owSensors.getTemp( OneWireSensors::tTempSensor::tSolarCooler);
+    Serial.println("Temp(Solar Cooler) control: " + String(t) + "°C");
 
-    //manage window status
-    if ( actor.windowAuto) {  //only in case auto is enabled
-      if ( t >= MAX_TEMPERATURE)
-        actor.setWindow( actor.windowOpen);
-      else if ( t <= MIN_TEMPERATURE)
-        actor.setWindow( actor.windowClose);
+    //manage fan status
+    if ( actor.solarAuto) {  //only in case auto is enabled
+      if ( isnan( t))
+        actor.setSolarVentilation( SolarActor::sOff);
+      else if ( t >= MAX_TEMPERATURE)
+        actor.setSolarVentilation( SolarActor::sMax);
+      else if ( t >= FAN_TEMPERATURE)
+        actor.setSolarVentilation( SolarActor::sOn);
+      else if ( t < OFF_TEMPERATURE)
+        actor.setSolarVentilation( SolarActor::sOff);
     }
 
     //------- call it as often as possible (last statement) ------
@@ -146,19 +140,9 @@ void loop(void) {
     writeSensors(); //write all sensors
   } //once per minute
 
-  //------- call it as often as possible ------
-  if ( logPin( PIN_BUTTON, bButton, "Button")) {
-    Serial.println("Controlling window");
-    if (actor.windowMoveTime == 0) { //not moving - jump to opposite state
-      actor.setWindow( actor.windowCurrentState == actor.windowOpen ? actor.windowClose : actor.windowOpen);
-    } else {  //moving? - stop immediately
-      actor.setWindow( actor.windowStop);
-    }
-  }
-
   if ((millis() - timeSinceLastSensorRead) >= 1000*SENSOR_READ_INTERVAL_SEC) {  //read sensors values
     timeSinceLastSensorRead = millis();
     esp_task_wdt_reset();
   }
-  delay(1);
+  delay(100);
 }

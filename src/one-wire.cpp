@@ -7,9 +7,8 @@ OneWireSensors owSensors;
 OneWire oneWire(PIN_ONE_WIRE);
 DallasTemperature ow_sensors(&oneWire);
 
-DeviceAddress internalThermometer = OW_INTERNAL;
-DeviceAddress outdoorThermometer = OW_OUTDOOR;
-DeviceAddress greenhouseThermometer = OW_GREENHOUSE;
+DeviceAddress roomThermometer = OW_ROOM;
+DeviceAddress solarCoolerThermometer = OW_COOLER;
 
 void OneWireSensors::setup() {
   ow_sensors.begin(); // Start up the library
@@ -21,10 +20,12 @@ void OneWireSensors::setup() {
   } else
     Serial.println("Error: Missing 1-wire thermometer!");
   ow_sensors.setResolution( 12); //12-bit resolution
+  dumpSensors();
 }
 
 String OneWireSensors::strAddress( const uint8_t* deviceAddress, bool shortStr) {
   String s;
+  s.reserve(20);
   for (uint8_t i = 0; i < 8; i++) {
     if (!shortStr)
       s += "0x";
@@ -41,30 +42,30 @@ String OneWireSensors::strAddress( const uint8_t* deviceAddress, bool shortStr) 
 float OneWireSensors::getTemp( tTempSensor channel) {
  //Read temperature from the DS1820 sensor(s)
   ow_sensors.requestTemperatures();
-  DeviceAddress* adr = &greenhouseThermometer;
+  DeviceAddress* adr = &solarCoolerThermometer;
   switch (channel) {
-  case tTempSensor::tInternal:
-    adr = &internalThermometer;
+  case tTempSensor::tRoom:
+    adr = &roomThermometer;
     break;
-  case tTempSensor::tOutdoor:
-    adr = &outdoorThermometer;
-    break;
-  case tTempSensor::tGreenHouse:  //already assigned
+  case tTempSensor::tSolarCooler:
+    adr = &solarCoolerThermometer;
     break;
   }
   float t = ow_sensors.getTempC(*adr);
   if (t != -127)
     return t;
   return NAN;
-  /*for ( uint8_t i1 = 0; i1 < ow_sensors.getDeviceCount(); i1++) {
-    t = ow_sensors.getTempCByIndex( i1);
-    //ow_sensors.getAddress(insideThermometer, i1);
-    //printOWAddress( insideThermometer); Serial.println();
+}
+
+void OneWireSensors::dumpSensors() {
+  for ( uint8_t i1 = 0; i1 < ow_sensors.getDeviceCount(); i1++) {
+    float t = ow_sensors.getTempCByIndex( i1);
     if (t == -127)
-      return NAN;
-    return t;
+      t = NAN;
+    DeviceAddress adr;
+    ow_sensors.getAddress(adr, i1);
+    Serial.println( String(i1) + " " + strAddress(adr, false) + " " + String(t));
   }
-  return NAN;*/
 }
 
 String OneWireSensors::getOWStrWeb() {
@@ -79,19 +80,18 @@ String OneWireSensors::getOWStrWeb() {
       t = NAN;
     DeviceAddress adr;
     ow_sensors.getAddress(adr, i1);
-    if (memcmp( adr, greenhouseThermometer, sizeof(adr)) == 0)
-    s += String("<br/>OWTemp") + i1 + ": " + t + " °C " + strAddress(adr, true);
+    if (memcmp( adr, solarCoolerThermometer, sizeof(adr)) == 0)
+      s += String("Cooler: <b>") + t + "°C</b> " + strAddress(adr, true) + "<br>";
+    else
+      s += String("Room: ") + t + "°C " + strAddress(adr, true) + "<br>";
   }
   return s;
 }
 
-
 String OneWireSensors::log() {
-  float t = getTemp( tTempSensor::tInternal);
-  Serial.println(String("Temp(Internal): ") + t + "°C");
-  t = getTemp( tTempSensor::tOutdoor);
-  Serial.println(String("Temp(Outdoor): ") + t + "°C");
-  t = getTemp( tTempSensor::tGreenHouse);
-  Serial.println(String("Temp(Greenhouse): ") + t + "°C");
+  float t = getTemp( tTempSensor::tRoom);
+  Serial.println(String("Temp(Room): ") + t + "°C");
+  t = getTemp( tTempSensor::tSolarCooler);
+  Serial.println(String("Temp(Solar Cooler): ") + t + "°C");
   return "";
 }

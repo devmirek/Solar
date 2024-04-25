@@ -3,12 +3,12 @@
 
 class OneWireSensors {
 public:
-  enum class tTempSensor { tInternal, tOutdoor, tGreenHouse};  //Temp sensors
+  enum class tTempSensor { tRoom, tSolarCooler};  //Temp sensors
   void setup();
   float getTemp( tTempSensor channel);
   String getOWStrWeb();
   String log();
-
+  void dumpSensors();
 private:
   String strAddress(const uint8_t* deviceAddress, bool shortStr);
 };

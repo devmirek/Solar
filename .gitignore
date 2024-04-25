@@ -1,8 +1,3 @@
 .pio/
 .vscode/
 custom_dev.h
-/wdir.txt
-/wdir1.txt
-/window_sensor_greenhouse.scad
-/window_sensor_greenhouse.stl
-/window_sensor_pole.scad

@@ -1,29 +1,22 @@
 #ifndef ACTOR_H
 #define ACTOR_H
 
-class WindowActor {
+class SolarActor {
 public:
-  const int8_t windowStop = -1;
-  const int8_t windowClose = 0;
-  const int8_t windowOpen = 100;
+  enum tSolarMode { sOff=0, sOn, sMax};
   void setup();
-  void loop();
-  bool setWindow( int8_t state);
-  uint8_t getActorRelay();
+  bool setSolarVentilation( tSolarMode mode);
+  tSolarMode getActorRelay() {return _mode;};
+  uint8_t getActorRelayRaw();
+  const char* getRelayStr( tSolarMode mode);
   String log( bool web);
-
-  //TODO: move variables to private
-  bool windowAuto = true;
-  uint8_t windowCurrentState = 50;  //middle position to always start window positioning
-  uint8_t windowTargetState = 50; //middle position to always start window positioning
-  long windowMoveTime = 0;
+  bool solarAuto = true;
 private:
-  void _setActorRelay( uint8_t dir);
-
-  uint16_t windowFullTransitionTimeMs = DEFAULT_WINDOW_TRANSITION_TIME_MS;
+  void setActorRelay( tSolarMode mode);
+  tSolarMode _mode = sOff;
 };
 
-extern WindowActor actor;
+extern SolarActor actor;
 
 
 #endif //ACTOR_H

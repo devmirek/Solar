@@ -87,16 +87,6 @@ String respClose =
 
 String statusIndex() {
   String temp;
-
-  String status;
-  if (actor.windowMoveTime == 0) {
-    if (actor.windowCurrentState == 100)
-      status = " - opened";
-    if (actor.windowCurrentState == 0)
-      status = " - closed";
-  } else
-    status = " - moving";
-
   time_t now = time(nullptr);
   return "<!DOCTYPE HTML>"
          "<meta charset=\"UTF-8\">"
@@ -109,16 +99,16 @@ String statusIndex() {
          "<br/>Uptime: " + String( millis() / 1000 / 3600) + "h " + String(( millis() / 1000) % 3600) + "s" +
          "<br/>Memory: " + String( ESP.getFreeHeap()) +
          "<h1>Solar control</h1>"
-         "Current window: " + String( actor.windowCurrentState) + status +
-         "<br/>Target window: " + String( actor.windowTargetState) +
-         "<br/>Time to target: " + (actor.windowMoveTime > millis() ? String(( actor.windowMoveTime - millis()) / 1000) : "-") +
-         "<br/><br/>Relays: " + String(actor.getActorRelay(), BIN) +
+         "Mode: " + (actor.solarAuto ? "auto " : "manual ") + "<br/>"
+         "Current status: " + actor.getRelayStr(actor.getActorRelay()) + "<br/>"
+         "Relays: " + String(actor.getActorRelayRaw(), BIN) + "<br/>"
          "<h1>Sensors</h1>"
-         "Temp min: " + String( MIN_TEMPERATURE) + "°C max: " + String( MAX_TEMPERATURE) + "°C<br/>" +
+         "Temp min: " + STR_VALUE( OFF_TEMPERATURE) + "°C fan: " + STR_VALUE( FAN_TEMPERATURE) + "°C max: " + STR_VALUE( MAX_TEMPERATURE) + "°C<br/>" +
          owSensors.getOWStrWeb() +
          "<br/><input type=submit onclick=window.open('/auto') class=btn value=Auto>"
-         "<input type=submit onclick=window.open('/open') class=btn value=Open>"
-         "<input type=submit onclick=window.open('/close') class=btn value=Close></form>"
+         "<input type=submit onclick=window.open('/open') class=btn value=Fan>"
+         "<input type=submit onclick=window.open('/max') class=btn value=Max>"
+         "<input type=submit onclick=window.open('/close') class=btn value=Off></form>"
          "</html>" + style;
 }
 
@@ -139,19 +129,25 @@ void setupWebServer() {
   });
   server.on("/auto", HTTP_GET, []() {
     server.sendHeader("Connection", "close");
-    actor.windowAuto = true;
+    actor.solarAuto = true;
     server.send(200, "text/html", respClose);
   });
   server.on("/open", HTTP_GET, []() {
     server.sendHeader("Connection", "close");
-    actor.windowAuto = false;
-    actor.setWindow(actor.windowOpen);
+    actor.solarAuto = false;
+    actor.setSolarVentilation(SolarActor::sOn);
+    server.send(200, "text/html", respClose);
+  });
+  server.on("/max", HTTP_GET, []() {
+    server.sendHeader("Connection", "close");
+    actor.solarAuto = false;
+    actor.setSolarVentilation(SolarActor::sMax);
     server.send(200, "text/html", respClose);
   });
   server.on("/close", HTTP_GET, []() {
     server.sendHeader("Connection", "close");
-    actor.windowAuto = false;
-    actor.setWindow(actor.windowClose);
+    actor.solarAuto = false;
+    actor.setSolarVentilation(SolarActor::sOff);
     server.send(200, "text/html", respClose);
   });
   server.on("/reset", HTTP_GET, []() {
@@ -188,7 +184,6 @@ void setupWebServer() {
   });
   server.begin();
 }
-
 
 void loopWebServer() {
   server.handleClient();

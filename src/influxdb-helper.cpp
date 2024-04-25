@@ -69,7 +69,7 @@ bool setupInfluxDB() {
 }
 
 bool writeSensors() {
-  Point sen("environment");
+  Point sen("solar");
   if (!client.getServerUrl().length()) {
     return false;
   }
@@ -77,10 +77,9 @@ bool writeSensors() {
   //Serial.println(String(F("InfluxDB server connected: ")) + String(client.isConnected()));
 
   // Report all measurements
-  sen.addField(F("TempGreenhouse"), owSensors.getTemp( OneWireSensors::tTempSensor::tGreenHouse));
-  sen.addField(F("TempInternal"), owSensors.getTemp( OneWireSensors::tTempSensor::tInternal));
-  sen.addField(F("TempOutdoor"), owSensors.getTemp( OneWireSensors::tTempSensor::tOutdoor));
-  sen.addField(F("Fan"), actor.windowCurrentState);
+  sen.addField(F("TempRoom"), owSensors.getTemp( OneWireSensors::tTempSensor::tRoom));
+  sen.addField(F("TempCooler"), owSensors.getTemp( OneWireSensors::tTempSensor::tSolarCooler));
+  sen.addField(F("Fan"), actor.getActorRelay());
 
   // Print what are we exactly writing
   Serial.print(F("Writing: "));
@@ -120,15 +119,14 @@ bool writeStatus( const char* s) {
 
   //Serial.println(String(F("InfluxDB server connected: ")) + String(client.isConnected()));
 
-  Point status("device_status");
+  Point status("solar_status");
   status.addTag(F("Event"), s);
   status.addField(F("free_heap"), ESP.getFreeHeap());
   status.addField(F("max_alloc_heap"), ESP.getMaxAllocHeap());
   //status.addField(F("heap_fragmentation"), ESP.getHeapFragmentation());
   status.addField(F("uptime"), millis()/1000.0);
   status.addField(F("relay"), actor.getActorRelay());
-  status.addField(F("auto"), actor.windowAuto);
-  status.addField(F("window"), actor.getActorRelay() > 0 ? actor.windowTargetState : actor.windowCurrentState);
+  status.addField(F("auto"), actor.solarAuto);
 
   Serial.print(F("Writing device status: "));
   Serial.println(client.pointToLineProtocol(status));
