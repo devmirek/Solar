@@ -5,7 +5,7 @@ class OneWireSensors {
 public:
   enum class tTempSensor { tInternal, tOutdoor, tGreenHouse};  //Temp sensors
   void setup();
-  virtual float _getTemp( tTempSensor channel);
+  float getTemp( tTempSensor channel);
   String getOWStrWeb();
   String log();
 

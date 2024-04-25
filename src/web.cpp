@@ -3,6 +3,7 @@
 #include <Update.h>
 #include "solar.h"
 #include "actor.h"
+#include "one-wire.h"
 
 WebServer server(80);
 
@@ -107,21 +108,14 @@ String statusIndex() {
          "<br/>WiFi: " + WiFi.SSID() + " writeSucess: " + String( getWriteSuccessInfluxDB()) +
          "<br/>Uptime: " + String( millis() / 1000 / 3600) + "h " + String(( millis() / 1000) % 3600) + "s" +
          "<br/>Memory: " + String( ESP.getFreeHeap()) +
-         "<br/>VCC: " + String( sensors.getV( sensors.sum.VCC), 2) + "V" +
-         "<h1>Window control</h1>"
+         "<h1>Solar control</h1>"
          "Current window: " + String( actor.windowCurrentState) + status +
          "<br/>Target window: " + String( actor.windowTargetState) +
          "<br/>Time to target: " + (actor.windowMoveTime > millis() ? String(( actor.windowMoveTime - millis()) / 1000) : "-") +
          "<br/><br/>Relays: " + String(actor.getActorRelay(), BIN) +
-         "<br/>Actor Voltage/Current: " + String( sensors.getV( sensors.sum.actorVoltage), 2) + "V " + String( sensors.getV( sensors.sum.actorCurrent), 2) + "A"
-         "<br/>Mode: " + (actor.windowAuto ? "auto " : "manual ") + String(sensors.getGreenhouseTemp()) + "°C " + (sensors.isRaining() ? "rain " : "-") + (sensors.strongWind() ? "wind" : "-") +
          "<h1>Sensors</h1>"
          "Temp min: " + String( MIN_TEMPERATURE) + "°C max: " + String( MAX_TEMPERATURE) + "°C<br/>" +
          owSensors.getOWStrWeb() +
-         "<br/>Wind: " + weather.getWindDirStr(sensors.getV( sensors.sum.windDir)) + " " + String(sensors.getV( sensors.sum.windSpeed),1) + " km/h " + " Rain: " + String(sensors.getV( sensors.sum.rain),2) + " mm" +
-         "<br/>SHTC3: " + String(sensors.getV( sensors.sum.shtTemp)) + "°C " + String(sensors.getV( sensors.sum.shtHum)) + "%" +
-         "<br/>Light: " + String(sensors.getV( sensors.sum.lux)) + " lux" +
-         "<br/>SPL06: " + String(sensors.getV( sensors.sum.SPL06Temp)) + "°C " + String(sensors.getV( sensors.sum.SPL06Press)) + " hPa" +
          "<br/><input type=submit onclick=window.open('/auto') class=btn value=Auto>"
          "<input type=submit onclick=window.open('/open') class=btn value=Open>"
          "<input type=submit onclick=window.open('/close') class=btn value=Close></form>"

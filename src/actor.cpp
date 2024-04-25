@@ -11,16 +11,18 @@ void WindowActor::_setActorRelay( uint8_t dir) {
   bool bUp = HIGH;
   if (dir == wOpening)
     bUp = LOW;
-  digitalWrite( PIN_RELAY, bUp);
+  digitalWrite( PIN_RELAY1, bUp);
+  digitalWrite( PIN_RELAY2, bUp);
   writeStatus("relay");
 }
 
 uint8_t WindowActor::getActorRelay() {
-  return digitalRead( PIN_RELAY);
+  return digitalRead( PIN_RELAY1) | (digitalRead( PIN_RELAY2) < 1);
 }
 
 void WindowActor::setup() {
-  pinMode(PIN_RELAY, OUTPUT);
+  pinMode(PIN_RELAY1, OUTPUT);
+  pinMode(PIN_RELAY2, OUTPUT);
   _setActorRelay( wIdle);
 }
 

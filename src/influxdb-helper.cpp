@@ -1,6 +1,8 @@
 #include <InfluxDbClient.h>
 #include <InfluxDbCloud.h>
 #include "solar.h"
+#include "one-wire.h"
+#include "actor.h"
 
 uint16_t writeSuccess = 0;
 
@@ -75,25 +77,10 @@ bool writeSensors() {
   //Serial.println(String(F("InfluxDB server connected: ")) + String(client.isConnected()));
 
   // Report all measurements
-  sen.addField(F("TempGreenhouse"), sensors.getAvg( sensors.sum.owGreenTemp));
-  sen.addField(F("TempInternal"), sensors.getAvg( sensors.sum.owIntTemp));
-  sen.addField(F("TempOutdoor"), sensors.getAvg( sensors.sum.owOutTemp));
-  sen.addField(F("Temperature"), sensors.getAvg( sensors.sum.shtTemp));
-  sen.addField(F("Humidity"), sensors.getAvg( sensors.sum.shtHum));
-  sen.addField(F("SPL06Temp"), sensors.getAvg( sensors.sum.SPL06Temp));
-  sen.addField(F("Pressure"), sensors.getAvg( sensors.sum.SPL06Press));
-  sen.addField(F("VCC"), sensors.getAvg( sensors.sum.VCC));
-  sen.addField(F("Lux"), sensors.getAvg( sensors.sum.lux));
-  sen.addField(F("ActorVoltage"), sensors.getAvg( sensors.sum.actorVoltage));
-  sen.addField(F("ActorCurrent"), sensors.getAvg( sensors.sum.actorCurrent));
-  if ( sensors.sum.actorMaxCurrent > 0)
-    sen.addField(F("ActorMaxCurrent"), sensors.sum.actorMaxCurrent);
-  sen.addField(F("WindSpeed"), sensors.getAvg( sensors.sum.windSpeed));
-  sen.addField(F("WindDir"), sensors.getWindDirAvg());
-  sen.addField(F("Rain"), sensors.sum.rain.sum); //exception - send sum, not average
-  sen.addField(F("IsRaining"), sensors.isRaining());
-  sen.addField(F("StrongWind"), sensors.strongWind());
-  sen.addField(F("Window"), actor.windowCurrentState);
+  sen.addField(F("TempGreenhouse"), owSensors.getTemp( OneWireSensors::tTempSensor::tGreenHouse));
+  sen.addField(F("TempInternal"), owSensors.getTemp( OneWireSensors::tTempSensor::tInternal));
+  sen.addField(F("TempOutdoor"), owSensors.getTemp( OneWireSensors::tTempSensor::tOutdoor));
+  sen.addField(F("Fan"), actor.windowCurrentState);
 
   // Print what are we exactly writing
   Serial.print(F("Writing: "));

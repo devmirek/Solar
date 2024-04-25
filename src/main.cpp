@@ -24,6 +24,7 @@
 #include <esp_task_wdt.h>
 #include "solar.h"
 #include "actor.h"
+#include "one-wire.h"
 
 
 WiFiMulti wifiMulti;
@@ -47,15 +48,11 @@ void setup(void) {
   Serial.begin(115200);
   esp_task_wdt_init( 60, true); //enable 60s panic so ESP32 restarts
   esp_task_wdt_add(NULL); //add current thread to WDT watch
-  ledcSetup(CHAN_BUZZER, 8000, 12); //initialize buzzer
-  ledcAttachPin(PIN_BUZZER, CHAN_BUZZER);
-  ledcWriteTone(CHAN_BUZZER, 0);
   delay(1000);
 
   pinMode(PIN_LED, OUTPUT);
   digitalWrite( PIN_LED, LOW);
   pinMode(PIN_BUTTON, INPUT);
-  sensors.testI2C();
 
   // Connect to WiFi network
   uint8_t mac[6];
@@ -87,16 +84,13 @@ void setup(void) {
 
   //initialize sensors
   owSensors.setup();
-  sensors.setup();
 
   //initialize web server
   setupWebServer();
 
   actor.setup();
-  weather.setup();
-  ledcWriteTone(CHAN_BUZZER, 2000);   //beep
+
   delay(200);
-  ledcWriteTone(CHAN_BUZZER, 0);
 }
 
 bool logPin( uint8_t pin, bool &state, const char* name) {
@@ -124,15 +118,12 @@ void loop(void) {
 
     //------------ call once a minute  ------------
     //Read temperature from the DS1820 or other sensors
-    float t = sensors.getGreenhouseTemp();
+    float t = owSensors.getTemp( OneWireSensors::tTempSensor::tGreenHouse);
     Serial.println("Temp(Greenhouse) control: " + String(t) + "°C");
 
     //manage window status
     if ( actor.windowAuto) {  //only in case auto is enabled
-      if (sensors.isRaining() || sensors.strongWind()) { //close window if it is raining or wind is too strong
-        actor.setWindow( actor.windowClose);
-        Serial.println("close window due to rain or wind");
-      } else if ( t >= MAX_TEMPERATURE)
+      if ( t >= MAX_TEMPERATURE)
         actor.setWindow( actor.windowOpen);
       else if ( t <= MIN_TEMPERATURE)
         actor.setWindow( actor.windowClose);
@@ -150,11 +141,9 @@ void loop(void) {
     }
 
     esp_task_wdt_reset();
-    sensors.logSensors( false);
     owSensors.log();
 
     writeSensors(); //write all sensors
-    sensors.clearSumSensors();
   } //once per minute
 
   //------- call it as often as possible ------
@@ -170,7 +159,6 @@ void loop(void) {
   if ((millis() - timeSinceLastSensorRead) >= 1000*SENSOR_READ_INTERVAL_SEC) {  //read sensors values
     timeSinceLastSensorRead = millis();
     esp_task_wdt_reset();
-    sensors.readSensors();
   }
   delay(1);
 }

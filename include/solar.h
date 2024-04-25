@@ -4,7 +4,6 @@
 #define VERSION "0.01"
 
 //DEFAULT CONSTANTS
-#define CHAN_BUZZER 0
 #define REFRESH_WINDOW_MIN 1 //Set window rate
 #define REFRESH_INFLUXDB_MIN 1 //Set send to InfluxDB rate
 

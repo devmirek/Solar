@@ -38,7 +38,7 @@ String OneWireSensors::strAddress( const uint8_t* deviceAddress, bool shortStr) 
   return s;
 }
 
-float OneWireSensors::_getTemp( Sensors::tTempSensor channel) {
+float OneWireSensors::getTemp( tTempSensor channel) {
  //Read temperature from the DS1820 sensor(s)
   ow_sensors.requestTemperatures();
   DeviceAddress* adr = &greenhouseThermometer;
@@ -87,11 +87,11 @@ String OneWireSensors::getOWStrWeb() {
 
 
 String OneWireSensors::log() {
-  float t = _getTemp( Sensors::tTempSensor::tInternal);
+  float t = getTemp( tTempSensor::tInternal);
   Serial.println(String("Temp(Internal): ") + t + "°C");
-  t = _getTemp( Sensors::tTempSensor::tOutdoor);
+  t = getTemp( tTempSensor::tOutdoor);
   Serial.println(String("Temp(Outdoor): ") + t + "°C");
-  t = _getTemp( Sensors::tTempSensor::tGreenHouse);
+  t = getTemp( tTempSensor::tGreenHouse);
   Serial.println(String("Temp(Greenhouse): ") + t + "°C");
   return "";
 }
